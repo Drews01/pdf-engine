@@ -1,0 +1,7 @@
+[     229ms] [LOG] PDF Annotator initialized @ http://localhost:8080/js/app.js:84
+[     247ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8080/favicon.ico:0
+[   14101ms] [LOG] Delete tool exists: true @ :4
+[   14101ms] [LOG] Delete tool type: object @ :5
+[   14101ms] [LOG] Delete tool onActivate: function @ :6
+[   14102ms] [LOG] Current page: 1 @ :10
+[   14102ms] [LOG] Has PDF: false @ :11

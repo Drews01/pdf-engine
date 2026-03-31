@@ -1,0 +1,59 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: PDF Annotator
+      - generic [ref=e6]: No file loaded
+    - generic [ref=e7]:
+      - button [disabled] [ref=e8]:
+        - img [ref=e9]
+      - generic [ref=e11]: — / —
+      - button [disabled] [ref=e12]:
+        - img [ref=e13]
+  - generic [ref=e15]:
+    - complementary [ref=e16]:
+      - generic [ref=e17]:
+        - button "Select" [ref=e18] [cursor=pointer]:
+          - img [ref=e19]
+        - button "Hand Tool" [active] [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+      - generic [ref=e28]:
+        - button "Add Text" [ref=e29] [cursor=pointer]:
+          - img [ref=e30]
+        - button "Drawing Tools" [ref=e32] [cursor=pointer]:
+          - img [ref=e33]
+      - button "Stamps" [ref=e40] [cursor=pointer]:
+        - img [ref=e41]
+      - button "Delete Selected" [ref=e46] [cursor=pointer]:
+        - img [ref=e47]
+    - main [ref=e49]:
+      - generic [ref=e51] [cursor=pointer]:
+        - img [ref=e53]
+        - heading "Drop PDF file here" [level=2] [ref=e56]
+        - paragraph [ref=e57]: or click to browse
+        - generic [ref=e58]: PDF files only
+    - complementary [ref=e59]:
+      - generic [ref=e60]:
+        - generic [ref=e61]: Annotations
+        - generic [ref=e62]: "0"
+      - generic [ref=e64]:
+        - img [ref=e65]
+        - paragraph [ref=e68]: No annotations yet
+  - generic [ref=e69]:
+    - generic [ref=e70]:
+      - generic [ref=e71]: Color
+      - generic [ref=e72]:
+        - button [ref=e73] [cursor=pointer]
+        - button [ref=e74] [cursor=pointer]
+        - button [ref=e75] [cursor=pointer]
+        - button [ref=e76] [cursor=pointer]
+        - button [ref=e77] [cursor=pointer]
+    - generic [ref=e78]:
+      - generic [ref=e79]: Size
+      - combobox [ref=e80] [cursor=pointer]:
+        - option "Thin"
+        - option "Medium" [selected]
+        - option "Thick"
+        - option "Extra Thick"
+    - button "Save PDF" [ref=e82] [cursor=pointer]:
+      - img [ref=e83]
+      - text: Save PDF

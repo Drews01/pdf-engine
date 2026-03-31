@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Annotator - Angular Direct Integration Demo</title>
+  
+  <!-- PDF Annotator Libraries (load once) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    .app-header {
+      background: #1473E6;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .app-content {
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .user-selector {
+      margin-bottom: 24px;
+      padding: 16px 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .document-table {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .table-row {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .btn-preview {
+      padding: 8px 16px;
+      background: #1473E6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .pdf-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .pdf-modal-overlay.open { display: flex; }
+    .pdf-modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 1400px;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <h1>My Angular App - Document List</h1>
+    <div id="currentUserDisplay"></div>
+  </header>
+  
+  <main class="app-content">
+    <div class="user-selector">
+      <label>Current User:</label>
+      <select id="userSelect">
+        <option value='{"id":"u1","username":"john","fullName":"John Doe","role":"editor"}'>John Doe (Editor)</option>
+        <option value='{"id":"u2","username":"jane","fullName":"Jane Smith","role":"reviewer"}'>Jane Smith (Reviewer)</option>
+      </select>
+      <button onclick="setCurrentUser()">Set User</button>
+    </div>
+    
+    <div class="document-table">
+      <div class="table-row">
+        <div style="flex:1"><strong>Document Name</strong></div>
+        <div style="width:120px;text-align:center"><strong>Status</strong></div>
+        <div style="width:150px;text-align:right"><strong>Action</strong></div>
+      </div>
+      <div class="table-row">
+        <div style="flex:1">📄 Contract_Agreement.pdf</div>
+        <div style="width:120px;text-align:center"><span style="background:#fff3e0;color:#e65100;padding:4px 12px;border-radius:12px;font-size:12px;">Pending</span></div>
+        <div style="width:150px;text-align:right">
+          <button class="btn-preview" onclick="openPdf('Contract_Agreement.pdf')">Preview</button>
+        </div>
+      </div>
+      <div class="table-row">
+        <div style="flex:1">📄 Project_Proposal.pdf</div>
+        <div style="width:120px;text-align:center"><span style="background:#e8f5e9;color:#2e7d32;padding:4px 12px;border-radius:12px;font-size:12px;">Reviewed</span></div>
+        <div style="width:150px;text-align:right">
+          <button class="btn-preview" onclick="openPdf('Project_Proposal.pdf')">Preview</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- PDF Modal -->
+  <div id="pdfModal" class="pdf-modal-overlay">
+    <div class="pdf-modal-content">
+      <!-- This is where the PDF annotator would be mounted -->
+      <iframe id="pdfFrame" src="index.html" style="width:100%;height:100%;border:none;"></iframe>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+    
+    function setCurrentUser() {
+      const select = document.getElementById('userSelect');
+      currentUser = JSON.parse(select.value);
+      document.getElementById('currentUserDisplay').innerHTML = `
+        <span style="padding:6px 14px;background:rgba(255,255,255,0.2);border-radius:20px;">
+          Logged in as: ${currentUser.fullName} (${currentUser.role})
+        </span>
+      `;
+      alert(`User set to: ${currentUser.fullName}`);
+    }
+    
+    function openPdf(filename) {
+      if (!currentUser) {
+        alert('Please select a user first!');
+        return;
+      }
+      
+      const modal = document.getElementById('pdfModal');
+      const frame = document.getElementById('pdfFrame');
+      modal.classList.add('open');
+      
+      // In real Angular: this.pdfWorkspace.open({ pdfUrl, user: currentUser })
+      // For demo, we use postMessage to simulate direct integration
+      setTimeout(() => {
+        frame.contentWindow.postMessage({
+          type: 'SET_USER',
+          payload: currentUser
+        }, '*');
+      }, 500);
+    }
+    
+    // Close modal on click outside
+    document.getElementById('pdfModal').addEventListener('click', (e) => {
+      if (e.target.id === 'pdfModal') {
+        document.getElementById('pdfModal').classList.remove('open');
+      }
+    });
+    
+    // Initialize with first user
+    setCurrentUser();
+  </script>
+</body>
+</html>

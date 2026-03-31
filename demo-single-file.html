@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Annotator - Single File Save/Restore</title>
+  
+  <!-- PDF Annotator Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .demo-header {
+      max-width: 1400px;
+      margin: 0 auto 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .demo-header h1 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      color: #333;
+    }
+    
+    .demo-header p {
+      color: #666;
+      margin: 0;
+    }
+    
+    .user-section {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+    
+    .user-section label {
+      font-weight: 500;
+      color: #555;
+    }
+    
+    .user-section select {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    
+    .user-badge {
+      padding: 6px 14px;
+      background: #e3f2fd;
+      color: #1976d2;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .workflow-box {
+      max-width: 1400px;
+      margin: 0 auto 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      color: white;
+    }
+    
+    .workflow-box h3 {
+      margin: 0 0 15px;
+      font-size: 16px;
+    }
+    
+    .workflow-steps {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      font-size: 13px;
+    }
+    
+    .arrow {
+      font-size: 20px;
+      opacity: 0.7;
+    }
+    
+    .file-actions {
+      max-width: 1400px;
+      margin: 0 auto 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .file-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .file-group label {
+      font-weight: 500;
+      color: #555;
+      font-size: 14px;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+    
+    .btn-primary {
+      background: #1473E6;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #0d62c9;
+    }
+    
+    .btn-success {
+      background: #00AA00;
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: #008800;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    input[type="file"] {
+      padding: 8px;
+      border: 2px dashed #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    
+    .status-bar {
+      max-width: 1400px;
+      margin: 0 auto 20px;
+      padding: 15px 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #666;
+      border-left: 4px solid #1473E6;
+    }
+    
+    .status-bar.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border-left-color: #00AA00;
+    }
+    
+    .status-bar.warning {
+      background: #fff3e0;
+      color: #e65100;
+      border-left-color: #FF9500;
+    }
+    
+    #pdfContainer {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      height: 800px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .info-note {
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 15px 20px;
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #1565c0;
+    }
+    
+    .info-note code {
+      background: rgba(255,255,255,0.5);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    
+    .text-popup.show {
+      display: block !important;
+    }
+    
+    /* PDF Page Styles - CRITICAL for preview */
+    .main-container {
+      display: flex;
+      flex: 1;
+      height: 100%;
+      min-height: 0;
+    }
+    
+    .canvas-area {
+      flex: 1;
+      overflow: scroll;
+      background: #e5e5e5;
+      padding: 24px;
+      display: block;
+      position: relative;
+    }
+    
+    .canvas-area::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    
+    .canvas-area::-webkit-scrollbar-track {
+      background: #ddd;
+    }
+    
+    .canvas-area::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 6px;
+    }
+    
+    .pages-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 24px;
+      padding-bottom: 40px;
+      min-width: fit-content;
+    }
+    
+    .page-wrapper {
+      position: relative;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border-radius: 4px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    
+    .page-wrapper canvas {
+      display: block;
+    }
+    
+    .page-wrapper.hidden {
+      display: none !important;
+    }
+    
+    .pdf-canvas {
+      display: block;
+    }
+    
+    .fabric-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: auto;
+    }
+    
+    .fabric-wrapper canvas {
+      display: block;
+    }
+    
+    /* Toolbar Sidebar */
+    .toolbar-sidebar {
+      width: 60px;
+      background: #f8f9fa;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 0;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    
+    .tool-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      padding: 0 8px;
+    }
+    
+    .tool-divider {
+      width: 32px;
+      height: 1px;
+      background: #e0e0e0;
+      margin: 12px 0;
+    }
+    
+    .tool-btn {
+      width: 44px;
+      height: 44px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    
+    .tool-btn:hover {
+      background: #e0e0e0;
+    }
+    
+    .tool-btn.active {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    
+    /* Annotations Sidebar */
+    .annotations-sidebar {
+      width: 280px;
+      background: #f8f9fa;
+      border-left: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    
+    .annotations-header {
+      height: 48px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-weight: 500;
+    }
+    
+    .annotation-count {
+      background: #e0e0e0;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    
+    .annotations-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+    
+    .annotations-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+    
+    /* Properties Bar */
+    .properties-bar {
+      height: 56px;
+      background: #f8f9fa;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 0 20px;
+      flex-shrink: 0;
+    }
+    
+    .property-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .property-group label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 500;
+    }
+    
+    .color-picker {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .color-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+    
+    .color-btn.active {
+      border-color: white;
+      box-shadow: 0 0 0 2px #1473E6;
+    }
+    
+    .size-select {
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: white;
+    }
+    
+    /* Canvas container fix */
+    .canvas-container {
+      position: relative;
+    }
+    
+    .upper-canvas,
+    .lower-canvas {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="demo-header">
+    <h1>📄 PDF Annotator - Single File Workflow</h1>
+    <p>JSON metadata is embedded INSIDE the PDF file. Just one file to save and load!</p>
+    
+    <div class="user-section">
+      <label>Current User:</label>
+      <select id="userSelect">
+        <option value='{"id":"u1","username":"john","fullName":"John Doe","email":"john@example.com","role":"editor"}'>John Doe (Editor)</option>
+        <option value='{"id":"u2","username":"jane","fullName":"Jane Smith","email":"jane@example.com","role":"reviewer"}'>Jane Smith (Reviewer)</option>
+        <option value='{"id":"u3","username":"bob","fullName":"Bob Wilson","email":"bob@example.com","role":"viewer"}'>Bob Wilson (Viewer)</option>
+      </select>
+      <button class="btn btn-primary" onclick="setCurrentUser()" id="setUserBtn">Set User</button>
+      <span id="currentUserBadge" class="user-badge" style="display:none;"></span>
+    </div>
+  </div>
+  
+  <!-- Workflow -->
+  <div class="workflow-box">
+    <h3>🔄 How It Works (Single File!)</h3>
+    <div class="workflow-steps">
+      <span class="step">1️⃣ Load PDF</span>
+      <span class="arrow">→</span>
+      <span class="step">2️⃣ Add Annotations</span>
+      <span class="arrow">→</span>
+      <span class="step">3️⃣ Save (auto-embeds JSON)</span>
+      <span class="arrow">→</span>
+      <span class="step">4️⃣ Load Same PDF</span>
+      <span class="arrow">→</span>
+      <span class="step">5️⃣ ✅ Annotations Restored!</span>
+    </div>
+  </div>
+  
+  <!-- File Actions -->
+  <div class="file-actions">
+    <div class="file-group">
+      <label>📂 Load PDF:</label>
+      <input type="file" id="pdfInput" accept=".pdf" onchange="loadPdf(this)">
+    </div>
+    
+    <button class="btn btn-success" onclick="savePdf()" id="saveBtn" disabled>
+      💾 Save PDF (with embedded metadata)
+    </button>
+    
+    <button class="btn btn-primary" onclick="clearAll()">
+      🗑️ Clear All
+    </button>
+  </div>
+  
+  <!-- Status -->
+  <div id="statusBar" class="status-bar">
+    Ready! Select a user and load a PDF to begin.
+  </div>
+  
+  <!-- Info Note -->
+  <div class="info-note">
+    <strong>💡 How it works:</strong> When you save, the annotation metadata (who, when, what) is embedded as a 
+    <code>annotations.json</code> file attachment inside the PDF. When you reload that PDF, it's automatically extracted and annotations are restored!
+  </div>
+  
+  <!-- PDF Container -->
+  <div id="pdfContainer">
+    <div style="padding: 100px; text-align: center; color: #999;">
+      <h2>📄 Drop PDF file here</h2>
+      <p>or use the Load PDF button above</p>
+      <p style="margin-top: 20px; font-size: 13px;">
+        <strong>Try it:</strong> Save an annotated PDF, then reload it - annotations will be restored!
+      </p>
+    </div>
+  </div>
+
+  <!-- Text Popup (hidden by default) -->
+  <div class="text-popup" id="textPopup" style="display: none; position: fixed; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 16px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    <textarea id="textInput" placeholder="Enter text..." style="width: 250px; height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical; font-family: inherit;"></textarea>
+    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+      <button id="textCancel" style="padding: 6px 14px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
+      <button id="textConfirm" style="padding: 6px 14px; border: none; background: #1473E6; color: white; border-radius: 4px; cursor: pointer;">Add</button>
+    </div>
+  </div>
+
+  <!-- Application Scripts -->
+  <script type="module">
+    import { state } from './js/core/State.js';
+    import { Config } from './js/core/Config.js';
+    import { PDFService } from './js/services/PDFService.js';
+    import { AnnotationManager } from './js/annotations/AnnotationManager.js';
+    import { ToolFactory } from './js/tools/ToolFactory.js';
+    import { AnnotationsPanel } from './js/ui/AnnotationsPanel.js';
+    import { CanvasManager } from './js/ui/CanvasManager.js';
+    import { TextPopup } from './js/ui/TextPopup.js';
+    import { Toast } from './js/ui/Toast.js';
+    
+    // Initialize
+    const pdfService = new PDFService(state);
+    const annotationManager = new AnnotationManager(state);
+    const toolFactory = new ToolFactory(state);
+    
+    let canvasManager = null;
+    let uiInitialized = false;
+    let currentPdfFile = null;
+    
+    // Make functions global
+    window.setCurrentUser = function() {
+      const select = document.getElementById('userSelect');
+      const user = JSON.parse(select.value);
+      state.setCurrentUser(user);
+      
+      const badge = document.getElementById('currentUserBadge');
+      badge.textContent = `👤 ${user.fullName} (${user.role})`;
+      badge.style.display = 'inline-block';
+      
+      document.getElementById('setUserBtn').disabled = true;
+      document.getElementById('userSelect').disabled = true;
+      
+      updateStatus(`User set: ${user.fullName}. Ready to annotate!`, 'success');
+    };
+    
+    window.loadPdf = async function(input) {
+      if (!input.files || !input.files[0]) return;
+      
+      const file = input.files[0];
+      currentPdfFile = file; // Store for zoom reload
+      updateStatus('Loading PDF and checking for embedded annotations...');
+      
+      try {
+        console.log('Loading PDF:', file.name);
+        await pdfService.loadPDF(file, true); // true = extract metadata
+        console.log('PDF loaded, pages:', state.totalPages);
+        
+        console.log('Initializing UI...');
+        initAnnotatorUI();
+        console.log('UI initialized');
+        
+        document.getElementById('saveBtn').disabled = false;
+        
+        // Check for pending metadata (embedded annotations)
+        const pendingMetadata = pdfService.getPendingMetadata();
+        
+        if (pendingMetadata) {
+          updateStatus(`Found ${pendingMetadata.totalAnnotations} embedded annotations! Restoring...`, 'warning');
+          
+          // Show authors found
+          const authors = pendingMetadata.authors.map(a => a.fullName || a.username).join(', ');
+          
+          // Restore annotations after a short delay for UI to be ready
+          setTimeout(() => {
+            console.log('Starting annotation restoration...');
+            pdfService.loadAnnotationsFromJSON(pendingMetadata, (ann) => {
+              console.log('Restored annotation:', ann.id, ann.type);
+            });
+            
+            // Force a re-render of the annotations panel
+            setTimeout(() => {
+              state.emit(Config.EVENTS.ANNOTATION_ADDED, { annotation: { id: 'dummy' } });
+              console.log('Annotations in state after restore:', state.annotations);
+              
+              // Direct render call
+              if (window.annotationsPanel) {
+                console.log('Calling _render directly on panel');
+                window.annotationsPanel._render();
+              }
+            }, 100);
+            
+            updateStatus(
+              `✅ Restored ${pendingMetadata.totalAnnotations} annotations by: ${authors}`,
+              'success'
+            );
+          }, 500);
+        } else {
+          updateStatus(`PDF loaded: ${file.name} (${state.totalPages} pages). No embedded annotations found.`, 'success');
+        }
+        
+      } catch (error) {
+        updateStatus('Error: ' + error.message, 'error');
+        console.error(error);
+      }
+    };
+    
+    window.savePdf = async function() {
+      if (!state.hasPdf) {
+        alert('Please load a PDF first!');
+        return;
+      }
+      
+      updateStatus('Saving PDF with embedded annotations...');
+      
+      try {
+        // Export PDF with embedded metadata
+        const blob = await pdfService.exportPDF();
+        
+        // Download
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `annotated-${state.fileName}`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        const metadata = pdfService.getAnnotationMetadata();
+        updateStatus(
+          `✅ Saved! PDF contains ${metadata.totalAnnotations} annotations by ${metadata.authors.length} author(s). Reload this file to restore!`,
+          'success'
+        );
+        
+      } catch (error) {
+        updateStatus('Error saving: ' + error.message, 'error');
+        console.error(error);
+      }
+    };
+    
+    window.clearAll = function() {
+      state.setPdfDocument(null, '');
+      state._state.annotations = [];
+      state._fabricCanvases.clear();
+      state._pdfCanvases.clear();
+      uiInitialized = false;
+      canvasManager = null;
+      
+      document.getElementById('pdfContainer').innerHTML = `
+        <div style="padding: 100px; text-align: center; color: #999;">
+          <h2>📄 Cleared!</h2>
+          <p>Load a new PDF to start again</p>
+        </div>
+      `;
+      document.getElementById('saveBtn').disabled = true;
+      document.getElementById('pdfInput').value = '';
+      updateStatus('Cleared. Ready for new PDF.');
+    };
+    
+    function initAnnotatorUI() {
+      if (uiInitialized) {
+        // Just update the canvas manager if already initialized
+        canvasManager = new CanvasManager(state, pdfService, toolFactory);
+        return;
+      }
+      
+      const container = document.getElementById('pdfContainer');
+      container.innerHTML = `
+        <div class="main-container" style="height: 700px;">
+          <aside class="toolbar-sidebar" id="toolbarSidebar">
+            <div class="tool-group">
+              <button class="tool-btn active" data-tool="select" title="Select">↖</button>
+              <button class="tool-btn" data-tool="hand" title="Hand">✋</button>
+            </div>
+            <div class="tool-divider"></div>
+            <div class="tool-group">
+              <button class="tool-btn" data-tool="text" title="Text">T</button>
+              <button class="tool-btn" data-tool="draw" title="Draw">✏️</button>
+              <button class="tool-btn" data-tool="line" title="Line">➖</button>
+              <button class="tool-btn" data-tool="arrow" title="Arrow">➡️</button>
+              <button class="tool-btn" data-tool="rectangle" title="Rectangle">⬜</button>
+              <button class="tool-btn" data-tool="circle" title="Circle">⭕</button>
+              <button class="tool-btn" data-tool="highlighter" title="Highlighter">🖍️</button>
+            </div>
+            <div class="tool-divider"></div>
+            <div class="tool-group">
+              <button class="tool-btn" data-tool="stamp" title="Stamp">🏷️</button>
+              <button class="tool-btn" data-tool="delete" title="Delete">🗑️</button>
+            </div>
+          </aside>
+          <main class="canvas-area">
+            <div class="pages-container" id="pagesContainer"></div>
+          </main>
+          <aside class="annotations-sidebar">
+            <div class="annotations-header">
+              <span>Annotations</span>
+              <span class="annotation-count" id="annotationCount">0</span>
+            </div>
+            <div class="annotations-list" id="annotationsList">
+              <div class="annotations-empty">
+                <p>No annotations yet</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+        <div class="properties-bar" id="propertiesBar">
+          <div class="property-group">
+            <label>Color</label>
+            <div class="color-picker">
+              <button class="color-btn active" data-color="#E31937" style="background: #E31937;"></button>
+              <button class="color-btn" data-color="#000000" style="background: #000000;"></button>
+              <button class="color-btn" data-color="#0066CC" style="background: #0066CC;"></button>
+              <button class="color-btn" data-color="#00AA00" style="background: #00AA00;"></button>
+              <button class="color-btn" data-color="#FF9500" style="background: #FF9500;"></button>
+            </div>
+          </div>
+          <div class="property-group">
+            <label>Size</label>
+            <select class="size-select" id="sizeSelect">
+              <option value="2">Thin</option>
+              <option value="4" selected>Medium</option>
+              <option value="8">Thick</option>
+              <option value="12">Extra Thick</option>
+            </select>
+          </div>
+          <div class="property-group">
+            <label>Zoom</label>
+            <select class="size-select" id="zoomSelect" onchange="changeZoom(this.value)">
+              <option value="0.8">80%</option>
+              <option value="1.0">100%</option>
+              <option value="1.2" selected>120%</option>
+              <option value="1.5">150%</option>
+              <option value="2.0">200%</option>
+            </select>
+          </div>
+        </div>
+      `;
+      
+      // Initialize UI components
+      canvasManager = new CanvasManager(state, pdfService, toolFactory);
+      const annotationsPanel = new AnnotationsPanel(state);
+      new TextPopup(state, toolFactory.getTool('text'));
+      new Toast(state);
+      
+      // Store panel for later use
+      window.annotationsPanel = annotationsPanel;
+      
+      // Debug: Check if pages were created
+      setTimeout(() => {
+        const pages = document.querySelectorAll('.page-wrapper');
+        console.log(`Created ${pages.length} page(s)`);
+        if (pages.length === 0) {
+          updateStatus('Warning: No pages created!', 'warning');
+        }
+        
+        // Debug: Check annotations
+        console.log('Annotations in state:', state.annotations.length);
+        console.log('Annotations list element:', document.getElementById('annotationsList'));
+      }, 1000);
+      
+      // Setup tool buttons manually
+      setupToolButtons();
+      setupColorButtons();
+      setupSizeSelect();
+      
+      state.setTool(Config.DEFAULT_TOOL);
+      
+      // Update annotation count
+      state.on(Config.EVENTS.ANNOTATION_ADDED, () => {
+        document.getElementById('annotationCount').textContent = state.annotations.length;
+      });
+      
+      state.on(Config.EVENTS.ANNOTATION_REMOVED, () => {
+        document.getElementById('annotationCount').textContent = state.annotations.length;
+      });
+      
+      uiInitialized = true;
+    }
+    
+    function setupToolButtons() {
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.setTool(btn.dataset.tool);
+        });
+      });
+    }
+    
+    function setupColorButtons() {
+      document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.setColor(btn.dataset.color);
+        });
+      });
+    }
+    
+    function setupSizeSelect() {
+      document.getElementById('sizeSelect').addEventListener('change', (e) => {
+        state.setSize(parseInt(e.target.value));
+      });
+    }
+    
+    window.changeZoom = async function(scale) {
+      Config.SCALE = parseFloat(scale);
+      updateStatus(`Zoom set to ${Math.round(Config.SCALE * 100)}%`);
+      
+      // Reload current PDF if loaded
+      if (state.hasPdf && currentPdfFile) {
+        updateStatus(`Reloading PDF at ${Math.round(Config.SCALE * 100)}% zoom...`);
+        // Clear canvases
+        state._fabricCanvases.clear();
+        state._pdfCanvases.clear();
+        // Re-render
+        await pdfService.loadPDF(currentPdfFile, false);
+        // Re-init UI
+        canvasManager = new CanvasManager(state, pdfService, toolFactory);
+        updateStatus(`PDF reloaded at ${Math.round(Config.SCALE * 100)}% zoom`);
+      }
+    };
+    
+    function updateStatus(message, type = 'info') {
+      const bar = document.getElementById('statusBar');
+      bar.textContent = message;
+      bar.className = 'status-bar' + (type ? ' ' + type : '');
+      console.log(`[${type}] ${message}`);
+    }
+    
+    // Auto-set first user
+    window.setCurrentUser();
+  </script>
+</body>
+</html>

@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Annotator - Save & Restore Demo</title>
+  
+  <!-- PDF Annotator Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .demo-header {
+      max-width: 1200px;
+      margin: 0 auto 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .demo-header h1 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      color: #333;
+    }
+    
+    .demo-header p {
+      color: #666;
+      margin: 0;
+    }
+    
+    .user-section {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+    
+    .user-section label {
+      font-weight: 500;
+      color: #555;
+    }
+    
+    .user-section select {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    
+    .user-badge {
+      padding: 6px 14px;
+      background: #e3f2fd;
+      color: #1976d2;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    /* File Management Section */
+    .file-management {
+      max-width: 1200px;
+      margin: 0 auto 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .file-management h3 {
+      margin: 0 0 15px;
+      font-size: 16px;
+      color: #333;
+    }
+    
+    .file-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .file-group {
+      flex: 1;
+      min-width: 300px;
+    }
+    
+    .file-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #666;
+      font-weight: 500;
+    }
+    
+    .file-input-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .file-input-wrapper input[type="file"] {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+    
+    .btn-primary {
+      background: #1473E6;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #0d62c9;
+    }
+    
+    .btn-success {
+      background: #00AA00;
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: #008800;
+    }
+    
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+    
+    /* PDF Container */
+    #pdfContainer {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      min-height: 600px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Status Bar */
+    .status-bar {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 15px 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .status-bar.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    /* Info Panel */
+    .info-panel {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff3e0;
+      border-left: 4px solid #ff9800;
+      border-radius: 8px;
+    }
+    
+    .info-panel h4 {
+      margin: 0 0 10px;
+      color: #e65100;
+    }
+    
+    .info-panel ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #666;
+    }
+    
+    .info-panel li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Demo Header -->
+  <div class="demo-header">
+    <h1>📄 PDF Annotator - Save & Restore Demo</h1>
+    <p>This demo shows how to save annotations with author information and restore them later.</p>
+    
+    <div class="user-section">
+      <label>Current User:</label>
+      <select id="userSelect">
+        <option value='{"id":"u1","username":"john","fullName":"John Doe","email":"john@example.com","role":"editor"}'>John Doe (Editor)</option>
+        <option value='{"id":"u2","username":"jane","fullName":"Jane Smith","email":"jane@example.com","role":"reviewer"}'>Jane Smith (Reviewer)</option>
+        <option value='{"id":"u3","username":"bob","fullName":"Bob Wilson","email":"bob@example.com","role":"viewer"}'>Bob Wilson (Viewer)</option>
+      </select>
+      <button class="btn btn-secondary" onclick="setCurrentUser()">Set User</button>
+      <span id="currentUserBadge" class="user-badge" style="display:none;"></span>
+    </div>
+  </div>
+  
+  <!-- Info Panel -->
+  <div class="info-panel">
+    <h4>📋 How Save & Restore Works:</h4>
+    <ul>
+      <li><strong>Step 1:</strong> Upload a PDF and add annotations</li>
+      <li><strong>Step 2:</strong> Click "Save PDF + Annotations" to download TWO files: <code>document.pdf</code> and <code>document-annotations.json</code></li>
+      <li><strong>Step 3:</strong> Later, upload both files using "Load PDF + Annotations"</li>
+      <li><strong>Result:</strong> All annotations are restored with the original author information!</li>
+    </ul>
+  </div>
+  
+  <!-- File Management -->
+  <div class="file-management">
+    <h3>📁 File Operations</h3>
+    <div class="file-row">
+      <div class="file-group">
+        <label>1. Load PDF (New or Previously Saved)</label>
+        <div class="file-input-wrapper">
+          <input type="file" id="pdfInput" accept=".pdf" onchange="loadPdf(this)">
+        </div>
+      </div>
+      
+      <div class="file-group">
+        <label>2. Load Annotations JSON (Optional - for restoring)</label>
+        <div class="file-input-wrapper">
+          <input type="file" id="jsonInput" accept=".json" onchange="loadAnnotations(this)">
+        </div>
+      </div>
+    </div>
+    
+    <div class="file-row" style="margin-top: 20px;">
+      <div class="file-group">
+        <label>3. Save Your Work</label>
+        <div>
+          <button class="btn btn-success" onclick="savePdfWithAnnotations()">
+            💾 Save PDF + Annotations
+          </button>
+          <button class="btn btn-primary" onclick="downloadAnnotationsOnly()" style="margin-left: 10px;">
+            📋 Download JSON Only
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Status Bar -->
+  <div id="statusBar" class="status-bar">
+    Status: Ready. Select a user and load a PDF to begin.
+  </div>
+  
+  <!-- PDF Annotator Container -->
+  <div id="pdfContainer">
+    <div style="padding: 60px; text-align: center; color: #999;">
+      <h2>📄 Drop PDF file here</h2>
+      <p>or use the file input above</p>
+    </div>
+  </div>
+
+  <!-- Application Scripts -->
+  <script type="module">
+    import { state } from './js/core/State.js';
+    import { Config } from './js/core/Config.js';
+    import { PDFService } from './js/services/PDFService.js';
+    import { AnnotationManager } from './js/annotations/AnnotationManager.js';
+    import { ToolFactory } from './js/tools/ToolFactory.js';
+    import { Toolbar } from './js/ui/Toolbar.js';
+    import { PropertiesBar } from './js/ui/PropertiesBar.js';
+    import { AnnotationsPanel } from './js/annotations/AnnotationManager.js';
+    import { CanvasManager } from './js/ui/CanvasManager.js';
+    import { TextPopup } from './js/ui/TextPopup.js';
+    import { Toast } from './js/ui/Toast.js';
+    import { UploadOverlay } from './js/ui/UploadOverlay.js';
+    
+    // Initialize app
+    const pdfService = new PDFService(state);
+    const annotationManager = new AnnotationManager(state);
+    const toolFactory = new ToolFactory(state);
+    
+    let canvasManager = null;
+    let currentPdfFile = null;
+    let currentAnnotationsData = null;
+    
+    // Make functions globally available
+    window.setCurrentUser = function() {
+      const select = document.getElementById('userSelect');
+      const user = JSON.parse(select.value);
+      state.setCurrentUser(user);
+      
+      const badge = document.getElementById('currentUserBadge');
+      badge.textContent = `👤 ${user.fullName} (${user.role})`;
+      badge.style.display = 'inline-block';
+      
+      updateStatus(`User set to: ${user.fullName}`);
+    };
+    
+    window.loadPdf = async function(input) {
+      if (!input.files || !input.files[0]) return;
+      
+      const file = input.files[0];
+      currentPdfFile = file;
+      
+      updateStatus('Loading PDF...');
+      
+      try {
+        await pdfService.loadPDF(file);
+        initAnnotatorUI();
+        updateStatus(`PDF loaded: ${file.name} (${state.totalPages} pages)`);
+        
+        // If we have annotations data loaded, apply it
+        if (currentAnnotationsData) {
+          loadAnnotationsIntoState(currentAnnotationsData);
+        }
+      } catch (error) {
+        updateStatus('Error: ' + error.message, 'error');
+      }
+    };
+    
+    window.loadAnnotations = async function(input) {
+      if (!input.files || !input.files[0]) return;
+      
+      const file = input.files[0];
+      updateStatus('Loading annotations...');
+      
+      try {
+        const text = await file.text();
+        currentAnnotationsData = JSON.parse(text);
+        
+        const annCount = currentAnnotationsData.annotations?.length || 0;
+        const authors = currentAnnotationsData.authors?.map(a => a.username).join(', ') || 'Unknown';
+        
+        updateStatus(`Annotations loaded: ${annCount} annotations by ${authors}`);
+        
+        // If PDF already loaded, apply annotations immediately
+        if (state.hasPdf) {
+          loadAnnotationsIntoState(currentAnnotationsData);
+        }
+      } catch (error) {
+        updateStatus('Error loading annotations: ' + error.message, 'error');
+      }
+    };
+    
+    function loadAnnotationsIntoState(data) {
+      updateStatus('Restoring annotations to PDF...');
+      
+      // Set the user from the saved data
+      if (data.exportedBy) {
+        state.setCurrentUser(data.exportedBy);
+        const badge = document.getElementById('currentUserBadge');
+        badge.textContent = `👤 ${data.exportedBy.fullName || data.exportedBy.username}`;
+        badge.style.display = 'inline-block';
+      }
+      
+      // Load annotations
+      pdfService.loadAnnotationsFromJSON(data, (ann) => {
+        state.emit(Config.EVENTS.ANNOTATION_ADDED, { annotation: ann });
+      });
+      
+      updateStatus(`Restored ${data.annotations?.length || 0} annotations!`, 'success');
+    }
+    
+    window.savePdfWithAnnotations = async function() {
+      if (!state.hasPdf) {
+        alert('Please load a PDF first!');
+        return;
+      }
+      
+      updateStatus('Exporting PDF with annotations...');
+      
+      try {
+        const { pdfBlob, jsonBlob, metadata } = await pdfService.exportWithAnnotations();
+        
+        // Download PDF
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const pdfLink = document.createElement('a');
+        pdfLink.href = pdfUrl;
+        pdfLink.download = `annotated-${state.fileName}`;
+        pdfLink.click();
+        
+        // Download JSON
+        const jsonUrl = URL.createObjectURL(jsonBlob);
+        const jsonLink = document.createElement('a');
+        jsonLink.href = jsonUrl;
+        jsonLink.download = `annotated-${state.fileName.replace('.pdf', '-annotations.json')}`;
+        jsonLink.click();
+        
+        URL.revokeObjectURL(pdfUrl);
+        URL.revokeObjectURL(jsonUrl);
+        
+        updateStatus(
+          `Saved! PDF: ${metadata.totalAnnotations} annotations by ${metadata.authors.length} authors`,
+          'success'
+        );
+      } catch (error) {
+        updateStatus('Error saving: ' + error.message, 'error');
+      }
+    };
+    
+    window.downloadAnnotationsOnly = function() {
+      if (!state.hasPdf) {
+        alert('Please load a PDF first!');
+        return;
+      }
+      
+      const jsonBlob = pdfService.exportAnnotationsToJSON();
+      const url = URL.createObjectURL(jsonBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `annotations-${Date.now()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      updateStatus('Annotations JSON downloaded!', 'success');
+    };
+    
+    function initAnnotatorUI() {
+      const container = document.getElementById('pdfContainer');
+      container.innerHTML = `
+        <div class="main-container" style="height: 800px;">
+          <aside class="toolbar-sidebar" id="toolbarSidebar">
+            <!-- Tools will be initialized by Toolbar -->
+          </aside>
+          <main class="canvas-area">
+            <div class="pages-container" id="pagesContainer"></div>
+          </main>
+          <aside class="annotations-sidebar">
+            <div class="annotations-header">
+              <span>Annotations</span>
+              <span class="annotation-count" id="annotationCount">0</span>
+            </div>
+            <div class="annotations-list" id="annotationsList">
+              <div class="annotations-empty">
+                <p>No annotations yet</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+        <div class="properties-bar" id="propertiesBar">
+          <!-- Properties bar content -->
+        </div>
+      `;
+      
+      // Initialize UI components
+      canvasManager = new CanvasManager(state, pdfService, toolFactory);
+      new Toolbar(state, toolFactory);
+      new PropertiesBar(state, pdfService);
+      new AnnotationsPanel(state);
+      new TextPopup(state, toolFactory.getTool('text'));
+      new Toast(state);
+      
+      state.setTool(Config.DEFAULT_TOOL);
+    }
+    
+    function updateStatus(message, type = 'info') {
+      const statusBar = document.getElementById('statusBar');
+      statusBar.textContent = `Status: ${message}`;
+      statusBar.className = 'status-bar' + (type === 'success' ? ' success' : '');
+      console.log(`[${type}] ${message}`);
+    }
+    
+    // Auto-set first user
+    window.setCurrentUser();
+  </script>
+</body>
+</html>

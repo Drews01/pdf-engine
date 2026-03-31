@@ -1,0 +1,4 @@
+[     377ms] [LOG] No user set - waiting for authentication from parent @ http://localhost:8080/js/app.js:106
+[     377ms] [LOG] PDF Annotator initialized @ http://localhost:8080/js/app.js:91
+[     395ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8080/favicon.ico:0
+[   33273ms] [LOG] User context set: john_doe @ http://localhost:8080/js/core/UserContext.js:114
