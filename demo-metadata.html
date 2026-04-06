@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDF Annotator - Metadata Demo</title>
+  
+  <!-- External Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css"/>
+  
+  <style>
+    /* Additional styles for metadata demo */
+    .annotation-meta {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .annotation-meta .author {
+      font-weight: 500;
+      color: #444;
+    }
+    .annotation-meta .timestamp {
+      color: #888;
+    }
+    .annotation-meta .separator {
+      color: #ccc;
+    }
+    
+    .user-info-panel {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e0e0e0;
+      background: #f8f9fa;
+    }
+    .user-info-panel label {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .user-info-panel input {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .user-info-panel input:focus {
+      outline: none;
+      border-color: #0066CC;
+    }
+    
+    .metadata-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: #e3f2fd;
+      color: #0066CC;
+    }
+    
+    .demo-notice {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 8px 16px;
+      font-size: 12px;
+      text-align: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      height: 36px;
+    }
+    .demo-notice strong {
+      margin-right: 8px;
+    }
+    
+    /* Adjust layout for fixed banner */
+    body {
+      padding-top: 36px;
+    }
+    .topbar {
+      margin-top: 0;
+    }
+    
+    /* Make upload box clickable */
+    .upload-box {
+      cursor: pointer;
+    }
+    .upload-overlay {
+      cursor: pointer;
+    }
+    
+    /* Adjust main container for banner height */
+    .main-container {
+      height: calc(100vh - var(--topbar-height) - var(--properties-height) - 36px) !important;
+    }
+  </style>
+  
+  <!-- Configure PDF.js -->
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+</head>
+<body>
+  <!-- Demo Notice -->
+  <div class="demo-notice">
+    <strong>🚀 Metadata Demo</strong>
+    Saves annotation metadata (author, timestamp, position) into PDF. 
+    Download & re-open to restore! 
+    <small style="opacity:0.8">(Upload by click or drag & drop)</small>
+  </div>
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo">PDF Annotator</div>
+      <div class="divider"></div>
+      <div class="filename" id="filename">No file loaded</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-icon" id="prevBtn" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15,18 9,12 15,6"></polyline>
+        </svg>
+      </button>
+      <span class="page-info">
+        <span id="pageNum">—</span> / <span id="totalPg">—</span>
+      </span>
+      <button class="btn-icon" id="nextBtn" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9,18 15,12 9,6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="main-container">
+    <!-- Left Sidebar - Tools -->
+    <aside class="toolbar-sidebar" id="toolbarSidebar">
+      <div class="tool-group">
+        <button class="tool-btn active" data-tool="select" title="Select">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="hand" title="Hand Tool">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+            <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path>
+            <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path>
+            <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.01-3.01"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="tool-divider"></div>
+      
+      <div class="tool-group">
+        <button class="tool-btn" data-tool="text" title="Add Text">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="4,7 4,4 20,4 20,7"></polyline>
+            <line x1="9" y1="20" x2="15" y2="20"></line>
+            <line x1="12" y1="4" x2="12" y2="20"></line>
+          </svg>
+        </button>
+        <button class="tool-btn has-submenu" data-tool="draw" title="Drawing Tools">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+            <path d="M2 2l7.586 7.586"></path>
+            <circle cx="11" cy="11" r="2"></circle>
+          </svg>
+        </button>
+        <div class="submenu" id="drawSubmenu">
+          <button class="submenu-item active" data-tool="draw">
+            <span class="submenu-icon">✏️</span>
+            <span>Draw</span>
+          </button>
+          <button class="submenu-item" data-tool="line">
+            <span class="submenu-icon">➖</span>
+            <span>Line</span>
+          </button>
+          <button class="submenu-item" data-tool="arrow">
+            <span class="submenu-icon">➡️</span>
+            <span>Arrow</span>
+          </button>
+          <button class="submenu-item" data-tool="rectangle">
+            <span class="submenu-icon">⬜</span>
+            <span>Rectangle</span>
+          </button>
+          <button class="submenu-item" data-tool="circle">
+            <span class="submenu-icon">⭕</span>
+            <span>Circle</span>
+          </button>
+          <button class="submenu-item" data-tool="highlighter">
+            <span class="submenu-icon">🖍️</span>
+            <span>Highlighter</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="tool-divider"></div>
+      
+      <div class="tool-group">
+        <button class="tool-btn has-submenu" data-tool="stamp" title="Stamps">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 11 3.8 11 8c0 1.25-.97 2.5-1 4.5 0 2.24 1.11 4.13 2.5 4.89V22"></path>
+            <path d="M8 22v-2.38c0-2.13-1.03-3.12-1-5.62.03-2.72 1.49-6 4.5-6C14.37 8 16 9.8 16 14c0 1.25-.97 2.5-1 4.5 0 2.24 1.11 4.13 2.5 4.89V22"></path>
+          </svg>
+        </button>
+        <div class="submenu" id="stampSubmenu">
+          <button class="submenu-item active" data-stamp="check">
+            <span class="submenu-icon">✓</span>
+            <span>Checkmark</span>
+          </button>
+          <button class="submenu-item" data-stamp="cross">
+            <span class="submenu-icon">✕</span>
+            <span>Crossmark</span>
+          </button>
+          <button class="submenu-item" data-stamp="dot">
+            <span class="submenu-icon">●</span>
+            <span>Dot</span>
+          </button>
+          <button class="submenu-item" data-stamp="circle">
+            <span class="submenu-icon">○</span>
+            <span>Circle around</span>
+          </button>
+          <button class="submenu-item" data-stamp="crossout">
+            <span class="submenu-icon">—</span>
+            <span>Cross out</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="tool-divider"></div>
+      
+      <div class="tool-group">
+        <button class="tool-btn" data-tool="delete" title="Delete Selected">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3,6 5,6 21,6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Canvas Area -->
+    <main class="canvas-area" id="canvasArea">
+      <!-- Upload Overlay -->
+      <div class="upload-overlay" id="uploadOverlay">
+        <div class="upload-box" id="uploadBox">
+          <div class="upload-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14,2 14,8 20,8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+          </div>
+          <h2>Drop PDF file here</h2>
+          <p>or click to browse</p>
+          <span class="upload-hint">PDF files with annotation metadata are supported!</span>
+        </div>
+      </div>
+      
+      <!-- Pages Container -->
+      <div class="pages-container" id="pagesContainer"></div>
+    </main>
+
+    <!-- Right Sidebar - Annotations -->
+    <aside class="annotations-sidebar">
+      <!-- User Info Panel -->
+      <div class="user-info-panel">
+        <label>Annotating as</label>
+        <input type="text" id="usernameInput" placeholder="Your name" value="Demo User">
+      </div>
+      
+      <div class="annotations-header">
+        <span>Annotations</span>
+        <span class="annotation-count" id="annotationCount">0</span>
+      </div>
+      <div class="annotations-list" id="annotationsList">
+        <div class="annotations-empty">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <p>No annotations yet</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Properties Toolbar -->
+  <div class="properties-bar" id="propertiesBar">
+    <div class="property-group">
+      <label>Color</label>
+      <div class="color-picker">
+        <button class="color-btn active" data-color="#E31937" style="background: #E31937;"></button>
+        <button class="color-btn" data-color="#000000" style="background: #000000;"></button>
+        <button class="color-btn" data-color="#0066CC" style="background: #0066CC;"></button>
+        <button class="color-btn" data-color="#00AA00" style="background: #00AA00;"></button>
+        <button class="color-btn" data-color="#FF9500" style="background: #FF9500;"></button>
+      </div>
+    </div>
+    <div class="property-group">
+      <label>Size</label>
+      <select class="size-select" id="sizeSelect">
+        <option value="2">Thin</option>
+        <option value="4" selected>Medium</option>
+        <option value="8">Thick</option>
+        <option value="12">Extra Thick</option>
+      </select>
+    </div>
+    <div class="property-group property-group-right">
+      <button class="btn-save" id="saveBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17,21 17,13 7,13 7,21"></polyline>
+          <polyline points="7,3 7,8 15,8"></polyline>
+        </svg>
+        Save PDF with Metadata
+      </button>
+    </div>
+  </div>
+
+  <!-- Text Input Popup -->
+  <div class="text-popup" id="textPopup">
+    <textarea id="textInput" placeholder="Enter your text..."></textarea>
+    <div class="text-popup-actions">
+      <button class="btn-cancel" id="textCancel">Cancel</button>
+      <button class="btn-confirm" id="textConfirm">Add</button>
+    </div>
+  </div>
+
+  <!-- Progress Overlay -->
+  <div class="progress-overlay" id="progressOverlay">
+    <div class="progress-box">
+      <div class="progress-spinner"></div>
+      <div class="progress-label" id="progressLabel">Processing...</div>
+      <div class="progress-sub" id="progressSub"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Hidden File Input -->
+  <input type="file" id="fileInput" accept=".pdf" style="display:none"/>
+
+  <!-- Application Scripts -->
+  <script type="module">
+    /**
+     * Metadata-Aware PDF Annotator Demo
+     * This demo shows how to save and load annotation metadata
+     */
+    
+    import { PDFAnnotator } from './js/pdf-annotator.js';
+    import { Toolbar } from './js/ui/Toolbar.js';
+    import { ToolFactory } from './js/tools/ToolFactory.js';
+    import { Config } from './js/core/Config.js';
+    
+    // Custom metadata key for our annotation data
+    const METADATA_KEY = 'PDFAnnotatorMetadata';
+    
+    // Initialize the annotator with the canvas area as container
+    const annotator = new PDFAnnotator(document.getElementById('canvasArea'), {
+      onAnnotationAdded: (annotation) => {
+        console.log('Annotation added:', annotation);
+      },
+      onAnnotationRemoved: (annotation) => {
+        console.log('Annotation removed:', annotation);
+      },
+      onPdfLoaded: (data) => {
+        console.log('PDF loaded:', data);
+        renderAnnotationsList();
+      },
+      onError: (error) => {
+        console.error('Annotator error:', error);
+        showToast('Error: ' + error.message);
+      }
+    });
+    
+    // Initialize Toolbar to handle tool button clicks
+    // Create a shared ToolFactory instance for the toolbar
+    const toolFactory = new ToolFactory(annotator.state);
+    const toolbar = new Toolbar(annotator.state, toolFactory);
+    
+    // Set initial tool
+    annotator.state.setTool(Config.DEFAULT_TOOL);
+    
+    // Track current username
+    let currentUsername = 'Demo User';
+    
+    // Store original file for saving
+    let currentPdfFile = null;
+    
+    // DOM Elements
+    const usernameInput = document.getElementById('usernameInput');
+    const annotationsList = document.getElementById('annotationsList');
+    const annotationCount = document.getElementById('annotationCount');
+    const saveBtn = document.getElementById('saveBtn');
+    const toast = document.getElementById('toast');
+    
+    // Update username when input changes
+    usernameInput.addEventListener('input', (e) => {
+      currentUsername = e.target.value.trim() || 'Anonymous';
+      // Also update the annotator state so new annotations get the correct author
+      annotator.state.setCurrentUser({
+        id: 'user_' + Date.now(),
+        username: currentUsername,
+        fullName: currentUsername
+      });
+    });
+    
+    // Set initial user
+    annotator.state.setCurrentUser({
+      id: 'user_' + Date.now(),
+      username: currentUsername,
+      fullName: currentUsername
+    });
+    
+    /**
+     * Format timestamp for display
+     */
+    function formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      
+      if (diffMins < 1) return 'just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
+    }
+    
+    /**
+     * Render annotations list with metadata
+     */
+    function renderAnnotationsList() {
+      const annotations = annotator.state?.annotations || [];
+      const count = annotations.length;
+      
+      annotationCount.textContent = count;
+      
+      if (count === 0) {
+        annotationsList.innerHTML = `
+          <div class="annotations-empty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <p>No annotations yet</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Sort by page, then by timestamp
+      const sortedAnnotations = [...annotations].sort((a, b) => {
+        if (a.page !== b.page) return a.page - b.page;
+        return (a.timestamp || 0) - (b.timestamp || 0);
+      });
+      
+      const html = sortedAnnotations.map(ann => {
+        const author = ann.author?.username || ann.author?.fullName || 'Unknown';
+        const timestamp = ann.timestamp ? formatTimestamp(ann.timestamp) : '';
+        const hasMeta = author || timestamp;
+        
+        return `
+          <div class="annotation-item" data-id="${ann.id}">
+            <div class="annotation-type">
+              <span>${ann.icon || '📌'}</span>
+              <span>${ann.type}</span>
+              <span class="annotation-page">p.${ann.page}</span>
+            </div>
+            ${ann.content ? `<div class="annotation-content">${escapeHtml(ann.content)}</div>` : ''}
+            ${hasMeta ? `
+              <div class="annotation-meta">
+                <span class="metadata-badge">${author}</span>
+                ${timestamp ? `<span class="separator">•</span><span class="timestamp">${timestamp}</span>` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+      
+      annotationsList.innerHTML = html;
+      
+      // Add click handlers
+      annotationsList.querySelectorAll('.annotation-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const id = item.dataset.id;
+          const annotation = annotations.find(a => a.id === id);
+          if (annotation) {
+            annotator.goToPage(annotation.page);
+            if (annotation.fabricObject) {
+              const canvas = annotator.state.getFabricCanvas(annotation.page);
+              if (canvas) {
+                canvas.setActiveObject(annotation.fabricObject);
+                canvas.renderAll();
+              }
+            }
+          }
+        });
+      });
+    }
+    
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    /**
+     * Show toast notification
+     */
+    function showToast(message, duration = 3000) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), duration);
+    }
+    
+    // Listen for annotation changes via state events
+    annotator.state.on('annotation:added', () => renderAnnotationsList());
+    annotator.state.on('annotation:removed', () => renderAnnotationsList());
+    
+    /**
+     * Save PDF with embedded metadata
+     * This is the KEY FEATURE of this demo
+     */
+    saveBtn.addEventListener('click', async () => {
+      if (!currentPdfFile) {
+        showToast('No PDF loaded to save');
+        return;
+      }
+      
+      showToast('Preparing PDF with metadata...');
+      
+      try {
+        // Get the original PDF bytes from the stored file
+        if (!currentPdfFile) {
+          showToast('No original PDF file available');
+          return;
+        }
+        
+        const pdfBytes = await currentPdfFile.arrayBuffer();
+        
+        // Build metadata object with all annotation info
+        const metadata = {
+          version: '1.0',
+          savedAt: new Date().toISOString(),
+          annotatorVersion: 'metadata-demo',
+          annotations: annotator.state.annotations.map(ann => ({
+            id: ann.id,
+            type: ann.type,
+            page: ann.page,
+            content: ann.content,
+            timestamp: ann.timestamp,
+            author: ann.author,
+            // Position data for restoring
+            position: ann.fabricObject ? {
+              left: ann.fabricObject.left,
+              top: ann.fabricObject.top,
+              width: ann.fabricObject.width,
+              height: ann.fabricObject.height,
+              scaleX: ann.fabricObject.scaleX,
+              scaleY: ann.fabricObject.scaleY,
+              angle: ann.fabricObject.angle
+            } : null,
+            // Style data
+            style: {
+              color: ann.fabricObject?.stroke || ann.fabricObject?.fill,
+              strokeWidth: ann.fabricObject?.strokeWidth,
+              fontSize: ann.fabricObject?.fontSize
+            }
+          }))
+        };
+        
+        // Convert metadata to base64 to store in PDF
+        const metadataJson = JSON.stringify(metadata);
+        const metadataBase64 = btoa(unescape(encodeURIComponent(metadataJson)));
+        
+        // We need to use PDF-lib for proper metadata embedding
+        // For now, we'll download both the PDF and a sidecar metadata file
+        // Or use a custom approach with jsPDF
+        
+        // Alternative: Create a modified PDF with embedded metadata using PDF-lib
+        // Since jsPDF has limited metadata support, we'll use the sidecar approach
+        // and also try to embed what we can
+        
+        // For the actual PDF, we'll use a different approach
+        // We'll modify the pdf-annotator to support metadata
+        await savePdfWithMetadata(pdfBytes, metadata);
+        
+      } catch (error) {
+        console.error('Save error:', error);
+        showToast('Error saving PDF: ' + error.message);
+      }
+    });
+    
+    /**
+     * Save PDF with embedded custom metadata
+     * Uses PDF-lib for proper metadata embedding
+     */
+    async function savePdfWithMetadata(originalPdfBytes, metadata) {
+      // Load PDF-lib dynamically
+      const { PDFDocument } = await import('https://cdn.skypack.dev/pdf-lib@1.17.1');
+      
+      // Load the original PDF
+      const pdfDoc = await PDFDocument.load(originalPdfBytes);
+      
+      // Embed our custom metadata
+      const metadataJson = JSON.stringify(metadata);
+      pdfDoc.setTitle(annotator.state.filename || 'Annotated Document');
+      pdfDoc.setAuthor('PDF Annotator with Metadata');
+      pdfDoc.setCreationDate(new Date());
+      pdfDoc.setModificationDate(new Date());
+      
+      // Try to embed metadata in the PDF keywords field (standard PDF metadata)
+      // This is a workaround since pdf-lib doesn't easily support custom metadata fields
+      try {
+        // Store a base64-encoded version of metadata in keywords
+        const metadataBase64 = btoa(metadataJson);
+        const existingKeywords = pdfDoc.getKeywords() || '';
+        pdfDoc.setKeywords(existingKeywords + '|PDFANNOTATOR:' + metadataBase64);
+      } catch (e) {
+        console.log('Could not embed metadata in PDF:', e);
+      }
+      
+      // Serialize and save
+      const pdfBytes = await pdfDoc.save();
+      
+      // Download
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = (currentPdfFile?.name?.replace('.pdf', '') || 'annotated') + '.pdf';
+      link.click();
+      
+      showToast('PDF saved with embedded metadata!');
+      
+      URL.revokeObjectURL(url);
+    }
+    
+    /**
+     * Load PDF and extract metadata
+     * This is called when a PDF is loaded
+     */
+    async function loadPdfWithMetadata(file) {
+      try {
+        // Store the original file for later saving
+        currentPdfFile = file;
+        
+        // First, let the annotator load the PDF normally
+        // The annotator uses 'open' method, not 'loadPdf'
+        await annotator.open(file);
+        
+        // Hide the upload overlay
+        const uploadOverlay = document.getElementById('uploadOverlay');
+        if (uploadOverlay) {
+          uploadOverlay.classList.add('hidden');
+        }
+        
+        // Then try to extract metadata
+        await extractMetadata(file);
+        
+        renderAnnotationsList();
+        
+        showToast('PDF loaded! Annotations will include your name and timestamp.');
+        
+      } catch (error) {
+        console.error('Load error:', error);
+        showToast('Error loading PDF: ' + error.message);
+      }
+    }
+    
+    /**
+     * Extract metadata from loaded PDF
+     */
+    async function extractMetadata(file) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const { PDFDocument } = await import('https://cdn.skypack.dev/pdf-lib@1.17.1');
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        
+        // Try to find our custom metadata
+        let metadata = null;
+        
+        // Check keywords field for embedded metadata
+        try {
+          const keywords = pdfDoc.getKeywords() || '';
+          const match = keywords.match(/\|PDFANNOTATOR:([A-Za-z0-9+/=]+)/);
+          if (match) {
+            const metadataJson = atob(match[1]);
+            metadata = JSON.parse(metadataJson);
+          }
+        } catch (e) {
+          console.log('Could not parse metadata from keywords:', e);
+        }
+        
+        // If we found metadata, restore annotations
+        if (metadata && metadata.annotations && metadata.annotations.length > 0) {
+          console.log('Found embedded metadata:', metadata);
+          showToast(`Found ${metadata.annotations.length} annotations in metadata`);
+          
+          // Restore annotations with metadata
+          await restoreAnnotationsFromMetadata(metadata.annotations);
+        } else {
+          // Check for sidecar file
+          const sidecarName = file.name.replace('.pdf', '.annotations.json');
+          showToast('No embedded metadata found. You can also load a .annotations.json sidecar file.');
+        }
+        
+      } catch (error) {
+        console.log('Metadata extraction failed:', error);
+      }
+    }
+    
+    /**
+     * Restore annotations from metadata
+     */
+    async function restoreAnnotationsFromMetadata(annotationData) {
+      for (const data of annotationData) {
+        try {
+          // Create annotation object with metadata
+          const annotation = {
+            id: data.id || 'ann_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            type: data.type,
+            page: data.page,
+            content: data.content,
+            timestamp: data.timestamp,
+            author: data.author,
+            icon: getIconForType(data.type)
+          };
+          
+          // Add to state
+          annotator.state.annotations.push(annotation);
+          
+          // TODO: Restore the actual fabric object on the canvas
+          // This would require recreating the drawing/text/shape based on the saved data
+          // For now, we just restore the metadata
+          
+        } catch (e) {
+          console.error('Failed to restore annotation:', e);
+        }
+      }
+      
+      renderAnnotationsList();
+    }
+    
+    function getIconForType(type) {
+      const icons = {
+        text: '📝',
+        draw: '✏️',
+        line: '➖',
+        arrow: '➡️',
+        rectangle: '◻️',
+        circle: '◯',
+        stamp: '👍',
+        highlight: '🖍️'
+      };
+      return icons[type] || '📌';
+    }
+    
+    // Setup file input change handler
+    const fileInput = document.getElementById('fileInput');
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (file && file.name.toLowerCase().endsWith('.pdf')) {
+        await loadPdfWithMetadata(file);
+      } else if (file) {
+        showToast('Please select a PDF file');
+      }
+    });
+    
+    // Setup upload box click handler
+    const uploadBox = document.getElementById('uploadBox');
+    uploadBox.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent bubbling to overlay
+      const uploadOverlay = document.getElementById('uploadOverlay');
+      if (uploadOverlay && !uploadOverlay.classList.contains('hidden')) {
+        fileInput.click();
+      }
+    });
+    
+    // Make sure the upload overlay itself is clickable (when clicking outside the box)
+    const uploadOverlay = document.getElementById('uploadOverlay');
+    uploadOverlay.addEventListener('click', (e) => {
+      if (e.target === uploadOverlay && !uploadOverlay.classList.contains('hidden')) {
+        fileInput.click();
+      }
+    });
+    
+    // Listen for annotation changes to update the list
+    annotator.state.on('annotation:added', () => renderAnnotationsList());
+    
+    // Also allow loading sidecar JSON files
+    // uploadBox already declared above
+    uploadBox.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadBox.style.borderColor = '#0066CC';
+    });
+    
+    uploadBox.addEventListener('dragleave', () => {
+      uploadBox.style.borderColor = '#ccc';
+    });
+    
+    uploadBox.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      uploadBox.style.borderColor = '#ccc';
+      
+      const files = Array.from(e.dataTransfer.files);
+      const pdfFile = files.find(f => f.name.endsWith('.pdf'));
+      const jsonFile = files.find(f => f.name.endsWith('.annotations.json'));
+      
+      if (pdfFile) {
+        await loadPdfWithMetadata(pdfFile);
+      } else if (jsonFile) {
+        // Load sidecar metadata
+        const text = await jsonFile.text();
+        const metadata = JSON.parse(text);
+        if (metadata.annotations) {
+          await restoreAnnotationsFromMetadata(metadata.annotations);
+          showToast(`Loaded ${metadata.annotations.length} annotations from sidecar`);
+        }
+      }
+    });
+    
+    // Initial render
+    renderAnnotationsList();
+    
+    console.log('Metadata Demo loaded! Features:');
+    console.log('- Annotations include author and timestamp');
+    console.log('- Save PDF embeds full metadata');
+    console.log('- Load PDF extracts and restores metadata');
+    console.log('- Sidecar .annotations.json files also supported');
+  </script>
+</body>
+</html>

@@ -85,7 +85,6 @@ export class AnnotationsPanel {
           <span class="annotation-page">p.${ann.page}</span>
         </div>
         ${ann.content ? `<div class="annotation-content">${this._escapeHtml(ann.content)}</div>` : ''}
-        ${ann.author ? `<div class="annotation-author">👤 ${this._escapeHtml(ann.author.fullName || ann.author.username)}</div>` : ''}
       </div>
     `).join('');
     
