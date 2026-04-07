@@ -1,24 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PDF Annotator</title>
-  
+
   <!-- External Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  
+
   <!-- Styles -->
-  <link rel="stylesheet" href="css/styles.css"/>
-  
+  <link rel="stylesheet" href="css/styles.css" />
+
   <!-- Configure PDF.js -->
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   </script>
 </head>
+
 <body>
   <!-- Top Bar -->
   <header class="topbar">
@@ -63,9 +65,9 @@
           </svg>
         </button>
       </div>
-      
+
       <div class="tool-divider"></div>
-      
+
       <div class="tool-group">
         <button class="tool-btn" data-tool="text" title="Add Text">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -109,14 +111,18 @@
           </button>
         </div>
       </div>
-      
+
       <div class="tool-divider"></div>
-      
+
       <div class="tool-group">
         <button class="tool-btn has-submenu" data-tool="stamp" title="Stamps">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 11 3.8 11 8c0 1.25-.97 2.5-1 4.5 0 2.24 1.11 4.13 2.5 4.89V22"></path>
-            <path d="M8 22v-2.38c0-2.13-1.03-3.12-1-5.62.03-2.72 1.49-6 4.5-6C14.37 8 16 9.8 16 14c0 1.25-.97 2.5-1 4.5 0 2.24 1.11 4.13 2.5 4.89V22"></path>
+            <path
+              d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 11 3.8 11 8c0 1.25-.97 2.5-1 4.5 0 2.24 1.11 4.13 2.5 4.89V22">
+            </path>
+            <path
+              d="M8 22v-2.38c0-2.13-1.03-3.12-1-5.62.03-2.72 1.49-6 4.5-6C14.37 8 16 9.8 16 14c0 1.25-.97 2.5-1 4.5 0 2.24 1.11 4.13 2.5 4.89V22">
+            </path>
           </svg>
         </button>
         <div class="submenu" id="stampSubmenu">
@@ -142,9 +148,9 @@
           </button>
         </div>
       </div>
-      
+
       <div class="tool-divider"></div>
-      
+
       <div class="tool-group">
         <button class="tool-btn" data-tool="delete" title="Delete Selected">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -173,7 +179,7 @@
           <span class="upload-hint">PDF files only</span>
         </div>
       </div>
-      
+
       <!-- Pages Container -->
       <div class="pages-container" id="pagesContainer"></div>
     </main>
@@ -251,9 +257,10 @@
   <div class="toast" id="toast"></div>
 
   <!-- Hidden File Input -->
-  <input type="file" id="fileInput" accept=".pdf" style="display:none"/>
+  <input type="file" id="fileInput" accept=".pdf" style="display:none" />
 
   <!-- Application Scripts -->
   <script type="module" src="js/app.js"></script>
 </body>
+
 </html>
